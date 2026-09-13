@@ -181,6 +181,7 @@ export const api = {
       totalDefaulters,
       overallInstitutionAttendance: Number(overallRate),
       departmentStats: deptStats,
+      students: STUDENTS,
       recentAlerts: [
         { title: "Mechanical Engineering Attendance Drop", detail: "Sem 6 Mechanical attendance dipped below 77%", time: "1 hour ago", severity: "high" },
         { title: "Monthly Defaulter List Released", detail: "158 total students flagged for attendance shortage", time: "4 hours ago", severity: "medium" },
