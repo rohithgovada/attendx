@@ -18,7 +18,7 @@ import { Profile } from "./pages/shared/Profile";
 
 // Helper component to redirect root "/" to user role dashboard
 const RootRedirect = () => {
-  const { isAuthenticated, role, loading } = useAuth();
+  const { isAuthenticated, role, loading, loginAs } = useAuth();
 
   if (loading) {
     return (
@@ -29,7 +29,8 @@ const RootRedirect = () => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    loginAs("student");
+    return <Navigate to="/student/dashboard" replace />;
   }
 
   switch (role) {
@@ -42,7 +43,7 @@ const RootRedirect = () => {
     case "parent":
       return <Navigate to="/parent/dashboard" replace />;
     default:
-      return <Navigate to="/login" replace />;
+      return <Navigate to="/student/dashboard" replace />;
   }
 };
 

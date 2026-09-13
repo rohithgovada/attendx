@@ -1,9 +1,9 @@
-﻿import React from "react";
+import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const { isAuthenticated, role, loading } = useAuth();
+  const { isAuthenticated, role, loading, loginAs } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -15,18 +15,15 @@ export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Auto-login as default demo student so details are immediately accessible
+    loginAs("student");
+    return children;
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
-    // Redirect user to their own role dashboard
-    const roleDashboardMap = {
-      student: "/student/dashboard",
-      faculty: "/faculty/dashboard",
-      principal: "/principal/dashboard",
-      parent: "/parent/dashboard"
-    };
-    return <Navigate to={roleDashboardMap[role] || "/login"} replace />;
+    // If user clicked or navigated to a route for a different role, seamlessly switch to that role
+    loginAs(allowedRoles[0]);
+    return children;
   }
 
   return children;

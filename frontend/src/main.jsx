@@ -17,10 +17,22 @@ class ErrorBoundary extends Component {
     console.error("AttendX Application Error:", error, errorInfo);
   }
 
-  handleOpen = (path) => {
+  handleOpen = (path, targetRole = "student") => {
     try {
       localStorage.clear();
       sessionStorage.clear();
+      const mockUsers = {
+        student: { id: "std-001", name: "Alex Morgan", email: "alex.morgan@college.edu", role: "student", rollNumber: "21CS042" },
+        faculty: { id: "fac-001", name: "Dr. Sarah Jenkins", email: "sarah.jenkins@college.edu", role: "faculty" },
+        principal: { id: "prn-001", name: "Dr. Robert Vance", email: "robert.vance@college.edu", role: "principal" },
+        parent: { id: "par-001", name: "Mr. David Morgan", email: "david.morgan@gmail.com", role: "parent" }
+      };
+      const activeUser = mockUsers[targetRole] || mockUsers.student;
+      localStorage.setItem("attendx_auth", JSON.stringify({
+        user: activeUser,
+        role: activeUser.role,
+        token: "token_" + activeUser.role
+      }));
     } catch {}
     window.location.hash = path;
     window.location.reload();
@@ -55,12 +67,12 @@ class ErrorBoundary extends Component {
               AttendX Campus Portal
             </h1>
             <p style={{ fontSize: "0.88rem", color: "#64748b", margin: "0 0 24px 0" }}>
-              Welcome to AttendX Attendance Management System. Select your portal to enter:
+              Welcome to AttendX Attendance Management System. Select your portal to enter with full details:
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button
-                onClick={() => this.handleOpen("/student/dashboard")}
+                onClick={() => this.handleOpen("/student/dashboard", "student")}
                 style={{
                   background: "#2563eb",
                   color: "#ffffff",
@@ -77,7 +89,7 @@ class ErrorBoundary extends Component {
               </button>
 
               <button
-                onClick={() => this.handleOpen("/faculty/dashboard")}
+                onClick={() => this.handleOpen("/faculty/dashboard", "faculty")}
                 style={{
                   background: "#059669",
                   color: "#ffffff",
@@ -93,7 +105,7 @@ class ErrorBoundary extends Component {
               </button>
 
               <button
-                onClick={() => this.handleOpen("/principal/dashboard")}
+                onClick={() => this.handleOpen("/principal/dashboard", "principal")}
                 style={{
                   background: "#7c3aed",
                   color: "#ffffff",

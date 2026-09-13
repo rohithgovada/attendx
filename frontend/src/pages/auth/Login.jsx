@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -23,6 +23,8 @@ export const Login = () => {
   const [password, setPassword] = useState("password123");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [countdown, setCountdown] = useState(3);
+  const [autoRedirectCancelled, setAutoRedirectCancelled] = useState(false);
 
   // When tab changes, prefill that role's demo email
   const handleRoleSelect = (roleKey) => {
@@ -38,6 +40,24 @@ export const Login = () => {
     else if (roleKey === "principal") navigate("/principal/dashboard");
     else if (roleKey === "parent") navigate("/parent/dashboard");
   };
+
+  const handleQuickDemoLogin = (roleKey) => {
+    loginAs(roleKey);
+    routeToRole(roleKey);
+  };
+
+  // Auto-forward to student dashboard so the user is never stuck on a login barrier
+  useEffect(() => {
+    if (autoRedirectCancelled) return;
+    if (countdown <= 0) {
+      handleQuickDemoLogin("student");
+      return;
+    }
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [countdown, autoRedirectCancelled]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,11 +77,6 @@ export const Login = () => {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleQuickDemoLogin = (roleKey) => {
-    loginAs(roleKey);
-    routeToRole(roleKey);
   };
 
   const demoRoles = [
@@ -115,31 +130,9 @@ export const Login = () => {
         padding: "32px 16px"
       }}
     >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "1040px",
-          background: "#ffffff",
-          borderRadius: "20px",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.4)",
-          overflow: "hidden",
-          display: "grid",
-          gridTemplateColumns: "1fr 1.2fr",
-          color: "var(--text-main)"
-        }}
-      >
+      <div className="login-card-container">
         {/* Left Banner: University Info & Quick Demo Logins */}
-        <div
-          style={{
-            background: "#0f172a",
-            color: "#ffffff",
-            padding: "40px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            borderRight: "1px solid #1e293b"
-          }}
-        >
+        <div className="login-left-panel">
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
               <div
@@ -252,14 +245,77 @@ export const Login = () => {
           </div>
         </div>
 
-        {/* Right Side: Standard Login Form */}
-        <div style={{ padding: "44px 48px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <div style={{ marginBottom: 24 }}>
-            <h2 style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em" }}>
-              Sign In to AttendX
+        {/* Right Side: Standard Login Form & Instant Access */}
+        <div className="login-right-panel">
+          {/* Instant Access & Countdown Banner */}
+          <div
+            style={{
+              background: "#eff6ff",
+              border: "1px solid #bfdbfe",
+              color: "#1e40af",
+              padding: "14px 16px",
+              borderRadius: 12,
+              marginBottom: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 10
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Sparkles size={18} color="#2563eb" />
+              <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+                {autoRedirectCancelled
+                  ? "Direct access ready: Tap below to see full details!"
+                  : `Entering Student Portal in ${countdown}s with all details...`}
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin("student")}
+                style={{
+                  background: "#2563eb",
+                  color: "#fff",
+                  padding: "7px 14px",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: "0.82rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6
+                }}
+              >
+                <span>Open Student Dashboard</span>
+                <ArrowRight size={14} />
+              </button>
+              {!autoRedirectCancelled && (
+                <button
+                  type="button"
+                  onClick={() => setAutoRedirectCancelled(true)}
+                  style={{
+                    background: "#fff",
+                    color: "#64748b",
+                    border: "1px solid #cbd5e1",
+                    padding: "6px 10px",
+                    borderRadius: 8,
+                    fontSize: "0.78rem",
+                    fontWeight: 600
+                  }}
+                >
+                  Stay Here
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em" }}>
+              AttendX ERP Portal
             </h2>
-            <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", marginTop: 4 }}>
-              Enter your credentials to access your college portal
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: 4 }}>
+              Choose a role tab to sign in or use 1-click launch from the left menu
             </p>
           </div>
 

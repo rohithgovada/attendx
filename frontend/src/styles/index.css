@@ -922,3 +922,48 @@ input, select, textarea {
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
 }
 
+/* Responsive Login Styles */
+.login-card-container {
+  width: 100%;
+  max-width: 1040px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  color: var(--text-main);
+}
+
+.login-left-panel {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-right: 1px solid #1e293b;
+}
+
+.login-right-panel {
+  padding: 40px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-width: 860px) {
+  .login-card-container {
+    grid-template-columns: 1fr !important;
+    margin: 10px 0;
+  }
+  .login-left-panel {
+    border-right: none !important;
+    border-bottom: 1px solid #1e293b;
+    padding: 24px 20px !important;
+  }
+  .login-right-panel {
+    padding: 28px 20px !important;
+  }
+}
+
