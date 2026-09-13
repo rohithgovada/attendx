@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import { Badge } from "../../components/common/Badge";
@@ -10,20 +11,32 @@ import {
   XCircle,
   Save,
   Search,
-  Users
+  Users,
+  ArrowLeft
 } from "lucide-react";
 
 export const MarkAttendance = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const passedSlot = location.state?.slot;
 
   // Filters / Session Meta
-  const [department, setDepartment] = useState("CSE");
-  const [semester] = useState("6th Semester");
-  const [section, setSection] = useState("A");
-  const [subject, setSubject] = useState("CS601: Advanced Database Systems");
+  const [department, setDepartment] = useState(passedSlot?.department || "CSE");
+  const [semester] = useState(passedSlot?.semester || "6th Semester");
+  const [section, setSection] = useState(passedSlot?.section || "A");
+  const [subject, setSubject] = useState(
+    passedSlot ? `${passedSlot.subjectCode}: ${passedSlot.subjectName}` : "CS601: Advanced Database Systems"
+  );
   const [date, setDate] = useState("2026-09-13");
-  const [timeSlot, setTimeSlot] = useState("09:00 AM - 10:00 AM");
-  const [lectureTopic, setLectureTopic] = useState("B+ Trees & Query Optimization Execution Plans");
+  const [timeSlot, setTimeSlot] = useState(passedSlot?.time || "09:00 AM - 10:00 AM");
+  const [lectureTopic, setLectureTopic] = useState(
+    passedSlot?.subjectCode === "CS605"
+      ? "Agile Sprint Planning & Jira Workflows"
+      : passedSlot?.subjectCode === "CS606"
+      ? "Distributed RPC & Message Queues Lab"
+      : "B+ Trees & Query Optimization Execution Plans"
+  );
 
   // Roster state
   const [students, setStudents] = useState([]);
@@ -90,6 +103,7 @@ export const MarkAttendance = () => {
     setIsSubmitting(true);
     try {
       const payload = {
+        slotId: passedSlot?.id,
         department,
         semester,
         section,
@@ -105,7 +119,10 @@ export const MarkAttendance = () => {
 
       await api.submitAttendance(payload);
       setConfirmModalOpen(false);
-      setToastMessage(`Attendance for ${subject} successfully recorded and synced to college database!`);
+      setToastMessage(`Attendance for ${subject} successfully recorded and marked as COMPLETED!`);
+      setTimeout(() => {
+        navigate("/faculty/dashboard");
+      }, 1500);
     } catch (err) {
       console.error("Submission failed:", err);
     } finally {
@@ -139,14 +156,20 @@ export const MarkAttendance = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setConfirmModalOpen(true)}
-          className="btn btn-primary btn-lg"
-          style={{ gap: 8, boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)" }}
-        >
-          <Save size={18} />
-          <span>Save & Finalize Register</span>
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Link to="/faculty/dashboard" className="btn btn-outline" style={{ gap: 6 }}>
+            <ArrowLeft size={16} />
+            <span>Dashboard</span>
+          </Link>
+          <button
+            onClick={() => setConfirmModalOpen(true)}
+            className="btn btn-primary"
+            style={{ gap: 8, boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)" }}
+          >
+            <Save size={18} />
+            <span>Save & Finalize Register</span>
+          </button>
+        </div>
       </div>
 
       {/* Class Session Configuration Strip */}

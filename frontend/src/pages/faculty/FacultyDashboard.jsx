@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
@@ -115,15 +115,21 @@ export const FacultyDashboard = () => {
           trend="Immediate attention needed"
           trendType="negative"
         />
-        <StatCard
-          title="Lectures Today"
-          value={`${dashboardData.scheduledTodayCount} Classes`}
-          icon={Clock}
-          color="#8b5cf6"
-          bgColor="#f5f3ff"
-          trend="1 Completed, 2 Pending"
-          trendType="neutral"
-        />
+        {(() => {
+          const completedCount = dashboardData.todaySchedule ? dashboardData.todaySchedule.filter(s => s.marked).length : 1;
+          const pendingCount = dashboardData.todaySchedule ? dashboardData.todaySchedule.length - completedCount : 2;
+          return (
+            <StatCard
+              title="Lectures Today"
+              value={`${dashboardData.scheduledTodayCount} Classes`}
+              icon={Clock}
+              color="#8b5cf6"
+              bgColor="#f5f3ff"
+              trend={`${completedCount} Completed, ${pendingCount} Pending`}
+              trendType={pendingCount === 0 ? "positive" : "neutral"}
+            />
+          );
+        })()}
       </div>
 
       {/* Two Column Section: Today's Schedule & Defaulter Watchlist */}
@@ -180,7 +186,7 @@ export const FacultyDashboard = () => {
                         Marked ({slot.presentCount}/{slot.totalStudents} Present)
                       </span>
                       <button
-                        onClick={() => navigate("/faculty/mark-attendance")}
+                        onClick={() => navigate("/faculty/mark-attendance", { state: { slot } })}
                         className="btn btn-outline btn-sm"
                       >
                         Edit
@@ -188,7 +194,7 @@ export const FacultyDashboard = () => {
                     </div>
                   ) : (
                     <button
-                      onClick={() => navigate("/faculty/mark-attendance")}
+                      onClick={() => navigate("/faculty/mark-attendance", { state: { slot } })}
                       className="btn btn-primary btn-sm"
                       style={{ gap: 6 }}
                     >

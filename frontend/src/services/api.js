@@ -10,7 +10,7 @@ import {
 } from "../mockData/attendance";
 import { NOTIFICATIONS_DATA } from "../mockData/notifications";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+const API_BASE_URL = "/api";
 
 const client = axios.create({
   baseURL: API_BASE_URL,
@@ -82,22 +82,40 @@ export const api = {
     return logs;
   },
 
+  // Helper to get persistent faculty schedule
+  getStoredFacultySchedule() {
+    try {
+      const saved = localStorage.getItem("attendx_faculty_schedule");
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return JSON.parse(JSON.stringify(FACULTY_TODAY_SCHEDULE));
+  },
+
   // Faculty Services
   async getFacultyDashboardData(facultyId) {
+    let schedule = this.getStoredFacultySchedule();
+
     try {
       const res = await client.get("/faculty/dashboard/");
-      if (res.data) return res.data;
+      if (res.data && res.data.todaySchedule) {
+        return res.data;
+      }
     } catch {
       // Fallback
     }
-    const schedule = FACULTY_TODAY_SCHEDULE;
+
     const lowAttendanceStudents = STUDENTS.filter(s => s.attendanceRate < 75);
+    const completedCount = schedule.filter(s => s.marked).length;
 
     return {
-      totalClassesConducted: 94,
+      totalClassesConducted: 93 + completedCount,
       avgClassAttendance: 84.6,
       lowAttendanceCount: lowAttendanceStudents.length,
       scheduledTodayCount: schedule.length,
+      completedTodayCount: completedCount,
+      pendingTodayCount: schedule.length - completedCount,
       todaySchedule: schedule,
       lowAttendanceStudents: lowAttendanceStudents.slice(0, 5)
     };
@@ -113,8 +131,27 @@ export const api = {
     return STUDENTS;
   },
 
-  // Mark Attendance & Trigger Automated Notification Engine in Django!
+  // Mark Attendance & Trigger Automated Notification Engine!
   async submitAttendance(markingPayload) {
+    // 1. Update Persistent Local Schedule
+    try {
+      const schedule = this.getStoredFacultySchedule();
+      const subjectStr = markingPayload.subject || "";
+      const subjectCode = subjectStr.split(":")[0].trim();
+      const slotId = markingPayload.slotId;
+
+      const slot = schedule.find(s => (slotId && s.id === slotId) || s.subjectCode === subjectCode || subjectStr.includes(s.subjectCode));
+      if (slot) {
+        slot.marked = true;
+        slot.presentCount = markingPayload.stats?.presentCount ?? 19;
+        slot.absentCount = markingPayload.stats?.absentCount ?? 1;
+        localStorage.setItem("attendx_faculty_schedule", JSON.stringify(schedule));
+      }
+    } catch (e) {
+      console.error("Local schedule update error:", e);
+    }
+
+    // 2. Post to backend if reachable
     try {
       const res = await client.post("/faculty/mark-attendance/", markingPayload);
       if (res.data) return res.data;
