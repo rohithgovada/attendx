@@ -1,6 +1,7 @@
-﻿import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { api } from "../../services/api";
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -17,6 +18,28 @@ import { Badge } from "../common/Badge";
 export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   const { user, role, logout } = useAuth();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnread = useCallback(async () => {
+    try {
+      const list = await api.getNotifications(role, user?.id);
+      const unread = list.filter(n => !n.read && !n.is_read).length;
+      setUnreadCount(unread);
+    } catch {
+      // fallback
+    }
+  }, [role, user]);
+
+  useEffect(() => {
+    fetchUnread();
+    const handleUpdate = () => fetchUnread();
+    window.addEventListener("attendx_notifications_updated", handleUpdate);
+    window.addEventListener("attendx_new_notification", handleUpdate);
+    return () => {
+      window.removeEventListener("attendx_notifications_updated", handleUpdate);
+      window.removeEventListener("attendx_new_notification", handleUpdate);
+    };
+  }, [fetchUnread]);
 
   const handleLogout = () => {
     logout();
@@ -101,6 +124,22 @@ export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
             >
               <Icon size={19} />
               <span>{item.label}</span>
+              {item.path === "/notifications" && unreadCount > 0 && (
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    background: "#ef4444",
+                    color: "#ffffff",
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                    padding: "1px 7px",
+                    borderRadius: 9999,
+                    boxShadow: "0 1px 3px rgba(239, 68, 68, 0.4)"
+                  }}
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </NavLink>
           );
         })}

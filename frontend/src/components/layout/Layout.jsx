@@ -1,7 +1,8 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
+import { GlobalNotificationBanner } from "../common/GlobalNotificationBanner";
 
 export const Layout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -21,6 +22,7 @@ export const Layout = () => {
 
       {/* Main Content Area */}
       <div className="main-content-wrapper">
+        <GlobalNotificationBanner />
         <Navbar setMobileOpen={setMobileOpen} />
         <main className="page-content">
           <Outlet />

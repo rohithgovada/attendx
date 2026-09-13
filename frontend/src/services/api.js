@@ -243,7 +243,56 @@ export const api = {
       console.error("Local schedule update error:", e);
     }
 
-    // 2. Post to backend if reachable
+    // 2. Automated Notification Engine: Dispatch alerts for absentees and parents
+    try {
+      if (markingPayload.records) {
+        const records = markingPayload.records;
+        const absentEntries = Object.entries(records).filter(([_, status]) => status === "absent");
+        const sub = markingPayload.subject || "Class Session";
+
+        // Dispatch notifications for each absent student
+        for (const [sId] of absentEntries) {
+          const stu = STUDENTS.find(s => String(s.id) === String(sId) || s.rollNo === sId);
+          const studentName = stu ? stu.name : "Student";
+
+          // Alert to Student
+          await this.createNotification({
+            title: `⚠️ Class Absence Recorded: ${sub}`,
+            message: `You were marked ABSENT for ${sub} on ${markingPayload.date || "today"} (${markingPayload.timeSlot || "Lecture Period"}) by ${markingPayload.facultyName || "Faculty"}. Your attendance standing has been adjusted.`,
+            category: "Warning",
+            targetRole: "student",
+            studentId: sId,
+            priority: "high",
+            sender: markingPayload.facultyName || "Department Faculty"
+          });
+
+          // Alert to Parent
+          await this.createNotification({
+            title: `🚨 Ward Absence Alert: ${studentName}`,
+            message: `Official Notice: Your ward ${studentName} was marked ABSENT for ${sub} on ${markingPayload.date || "today"}. Please check the Parent Portal.`,
+            category: "Warning",
+            targetRole: "parent",
+            studentId: sId,
+            priority: "high",
+            sender: "Attendance ERP Automated System"
+          });
+        }
+
+        // Notify Principal regarding class register finalization
+        await this.createNotification({
+          title: `📋 Attendance Register Finalized: ${sub}`,
+          message: `${markingPayload.facultyName || "Faculty"} marked and finalized attendance for ${markingPayload.section ? `Section ${markingPayload.section}` : "Class"} (${markingPayload.stats?.presentCount ?? 0} Present, ${markingPayload.stats?.absentCount ?? 0} Absent).`,
+          category: "Academic",
+          targetRole: "principal",
+          priority: "medium",
+          sender: "Academic ERP Cell"
+        });
+      }
+    } catch (err) {
+      console.error("Automated attendance notification failed:", err);
+    }
+
+    // 3. Post to backend if reachable
     try {
       const res = await client.post("/faculty/mark-attendance/", markingPayload);
       if (res.data) return res.data;
@@ -316,7 +365,34 @@ export const api = {
     };
   },
 
-  // Notification Engine API
+  // Notification Engine API (Persistent with LocalStorage & Real-Time Event Dispatch)
+  getStoredNotifications() {
+    try {
+      const saved = localStorage.getItem("attendx_notifications");
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    const initial = JSON.parse(JSON.stringify(NOTIFICATIONS_DATA));
+    try {
+      localStorage.setItem("attendx_notifications", JSON.stringify(initial));
+    } catch (e) {
+      console.error(e);
+    }
+    return initial;
+  },
+
+  saveStoredNotifications(notifs) {
+    try {
+      localStorage.setItem("attendx_notifications", JSON.stringify(notifs));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("attendx_notifications_updated", { detail: notifs }));
+      }
+    } catch (e) {
+      console.error("Failed to persist notifications:", e);
+    }
+  },
+
   async getNotifications(role = "all", userId = null) {
     try {
       const res = await client.get("/notifications/", { params: { role, userId } });
@@ -324,8 +400,9 @@ export const api = {
     } catch {
       // Fallback
     }
-    if (role === "all") return NOTIFICATIONS_DATA;
-    return NOTIFICATIONS_DATA.filter(n => n.targetRole === "all" || n.targetRole === role);
+    const notifs = this.getStoredNotifications();
+    if (role === "all") return notifs;
+    return notifs.filter(n => n.targetRole === "all" || n.targetRole === role);
   },
 
   async markNotificationRead(id) {
@@ -334,15 +411,30 @@ export const api = {
     } catch {
       // Fallback
     }
+    const notifs = this.getStoredNotifications();
+    const target = notifs.find(n => n.id === id);
+    if (target) {
+      target.read = true;
+      target.is_read = true;
+      this.saveStoredNotifications(notifs);
+    }
     return { success: true };
   },
 
-  async markAllNotificationsRead() {
+  async markAllNotificationsRead(role = null) {
     try {
       await client.post("/notifications/mark-all-read/");
     } catch {
       // Fallback
     }
+    const notifs = this.getStoredNotifications();
+    notifs.forEach(n => {
+      if (!role || role === "all" || n.targetRole === "all" || n.targetRole === role) {
+        n.read = true;
+        n.is_read = true;
+      }
+    });
+    this.saveStoredNotifications(notifs);
     return { success: true };
   },
 
@@ -353,7 +445,29 @@ export const api = {
     } catch {
       // Fallback
     }
-    return { success: true, notification };
+    const notifs = this.getStoredNotifications();
+    const newNotif = {
+      id: notification.id || `NOTIF-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      title: notification.title || "New Campus Notification",
+      message: notification.message || "",
+      category: notification.category || "Circular",
+      timestamp: "Just now",
+      date: new Date().toISOString().split("T")[0],
+      read: false,
+      targetRole: notification.targetRole || "all",
+      sender: notification.sender || "Campus Administration",
+      priority: notification.priority || "medium",
+      ...notification
+    };
+    notifs.unshift(newNotif);
+    this.saveStoredNotifications(notifs);
+
+    // Dispatch real-time live alert toast
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("attendx_new_notification", { detail: newNotif }));
+    }
+
+    return { success: true, notification: newNotif };
   },
 
   // Reports

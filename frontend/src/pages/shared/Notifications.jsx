@@ -10,7 +10,9 @@ import {
   AlertTriangle,
   FileText,
   Send,
-  Plus
+  Plus,
+  CalendarCheck,
+  Sparkles
 } from "lucide-react";
 
 export const Notifications = () => {
@@ -42,7 +44,48 @@ export const Notifications = () => {
 
   useEffect(() => {
     loadNotifications();
+    const handleUpdate = () => loadNotifications();
+    window.addEventListener("attendx_notifications_updated", handleUpdate);
+    window.addEventListener("attendx_new_notification", handleUpdate);
+    return () => {
+      window.removeEventListener("attendx_notifications_updated", handleUpdate);
+      window.removeEventListener("attendx_new_notification", handleUpdate);
+    };
   }, [loadNotifications]);
+
+  const handleSimulate = async (type) => {
+    if (type === "warning") {
+      await api.createNotification({
+        title: "⚠️ Urgent Attendance Shortage: CS601 Distributed Systems",
+        message: "Your current attendance in CS601 is 68.0% (requires minimum 75%). Please submit a condonation application or meet your Class In-Charge Dr. Sarah Jenkins immediately.",
+        category: "Warning",
+        targetRole: "student",
+        priority: "high",
+        sender: "Dean of Academics"
+      });
+      setToastMessage("Live absence shortage alert dispatched to Student!");
+    } else if (type === "leave") {
+      await api.createNotification({
+        title: "📝 Short Absence Application: Alex Morgan (CS2024-042)",
+        message: "Alex Morgan has submitted a 2-day Medical Leave request (Sept 15 - Sept 16) for your section approval.",
+        category: "Leave",
+        targetRole: "faculty",
+        priority: "medium",
+        sender: "Student Leave Portal"
+      });
+      setToastMessage("Live leave application notification dispatched to Faculty In-Charge!");
+    } else if (type === "circular") {
+      await api.createNotification({
+        title: "📢 National College Tech Symposium & Hackathon 2026",
+        message: "Official Announcement: Annual Inter-College Hackathon registrations are open. All participants receive verified academic attendance credits.",
+        category: "Circular",
+        targetRole: "all",
+        priority: "medium",
+        sender: "Office of the Principal"
+      });
+      setToastMessage("College-wide circular notification dispatched to everyone!");
+    }
+  };
 
   const handleMarkAsRead = async (id) => {
     await api.markNotificationRead(id);
@@ -144,6 +187,82 @@ export const Notifications = () => {
               <span>Publish Notice</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Real-time Notification Simulator & Verification Station */}
+      <div
+        style={{
+          background: "#ffffff",
+          border: "1px solid #bfdbfe",
+          borderRadius: "var(--radius-lg)",
+          padding: "16px 20px",
+          marginBottom: 24,
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          boxShadow: "0 4px 12px -2px rgba(37, 99, 235, 0.08)"
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "12px",
+              background: "#eff6ff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#2563eb",
+              flexShrink: 0
+            }}
+          >
+            <Bell size={22} className="bell-ring-active" />
+          </div>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, margin: 0, color: "var(--text-main)" }}>
+                Live Notification Engine Station
+              </h3>
+              <Badge variant="student" style={{ fontSize: "0.7rem" }}>Active & Real-Time</Badge>
+            </div>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", margin: 0 }}>
+              Test instant push alerts, dual-tone audio chime, top-right animated banners, and navbar counter in 1 click:
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <button
+            onClick={() => handleSimulate("warning")}
+            className="btn btn-outline btn-sm"
+            style={{ borderColor: "#fecaca", color: "#b91c1c", background: "#fef2f2", gap: 6, fontWeight: 600 }}
+            title="Trigger instant student absence shortage notice"
+          >
+            <AlertTriangle size={14} />
+            <span>Test Absence Alert</span>
+          </button>
+          <button
+            onClick={() => handleSimulate("leave")}
+            className="btn btn-outline btn-sm"
+            style={{ borderColor: "#a7f3d0", color: "#065f46", background: "#ecfdf5", gap: 6, fontWeight: 600 }}
+            title="Trigger instant faculty leave application notice"
+          >
+            <CalendarCheck size={14} />
+            <span>Test Leave Request</span>
+          </button>
+          <button
+            onClick={() => handleSimulate("circular")}
+            className="btn btn-outline btn-sm"
+            style={{ borderColor: "#bfdbfe", color: "#1d4ed8", background: "#eff6ff", gap: 6, fontWeight: 600 }}
+            title="Trigger instant college circular notice"
+          >
+            <Send size={14} />
+            <span>Test College Circular</span>
+          </button>
         </div>
       </div>
 

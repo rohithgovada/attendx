@@ -1,4 +1,4 @@
-﻿/* AttendX - Design System & Modern College Management CSS */
+/* AttendX - Design System & Modern College Management CSS */
 
 :root {
   --primary: #2563eb;
@@ -868,3 +868,57 @@ input, select, textarea {
     transform: translateX(0);
   }
 }
+
+@keyframes slideInNotification {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes notifCountdown {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
+}
+
+@keyframes bellRingShake {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-14deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-10deg); }
+  75% { transform: rotate(5deg); }
+}
+
+.bell-ring-active {
+  animation: bellRingShake 1.2s ease-in-out infinite;
+  color: var(--primary) !important;
+}
+
+.notif-pulse-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
