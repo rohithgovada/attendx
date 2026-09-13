@@ -82,11 +82,17 @@ const INITIAL_LEAVE_APPLICATIONS = [
   }
 ];
 
+const isStaticHosting =
+  typeof window !== "undefined" &&
+  (window.location.hostname.includes("github.io") ||
+   window.location.hostname.includes("vercel.app") ||
+   window.location.protocol === "file:");
+
 const API_BASE_URL = "/api";
 
 const client = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 6000,
+  timeout: 1500,
   headers: {
     "Content-Type": "application/json"
   }
@@ -95,28 +101,32 @@ const client = axios.create({
 export const api = {
   // Authentication
   async login(email, password, role) {
-    try {
-      const res = await client.post("/auth/login/", { email, password, role });
-      if (res.data && res.data.success) {
-        return res.data;
+    if (!isStaticHosting) {
+      try {
+        const res = await client.post("/auth/login/", { email, password, role });
+        if (res.data && res.data.success) {
+          return res.data;
+        }
+      } catch {
+        // Graceful fallback to demo user if backend connection is unavailable
       }
-    } catch {
-      // Graceful fallback to demo user if backend connection is unavailable
-      const user = DEMO_USERS[role];
-      if (user) {
-        return { success: true, user, token: `local_token_${role}` };
-      }
+    }
+    const user = DEMO_USERS[role];
+    if (user) {
+      return { success: true, user, token: `local_token_${role}` };
     }
     return { success: false, message: "Invalid credentials" };
   },
 
   // Student Services
   async getStudentDashboardData(studentId) {
-    try {
-      const res = await client.get("/student/dashboard/", { params: { userId: studentId } });
-      if (res.data) return res.data;
-    } catch {
-      // Fallback
+    if (!isStaticHosting) {
+      try {
+        const res = await client.get("/student/dashboard/", { params: { userId: studentId } });
+        if (res.data) return res.data;
+      } catch {
+        // Fallback
+      }
     }
     const subjects = STUDENT_SUBJECT_ATTENDANCE;
     const timetable = STUDENT_TODAY_TIMETABLE;
@@ -182,13 +192,15 @@ export const api = {
   async getFacultyDashboardData(facultyId) {
     let schedule = this.getStoredFacultySchedule();
 
-    try {
-      const res = await client.get("/faculty/dashboard/");
-      if (res.data && res.data.todaySchedule) {
-        return res.data;
+    if (!isStaticHosting) {
+      try {
+        const res = await client.get("/faculty/dashboard/");
+        if (res.data && res.data.todaySchedule) {
+          return res.data;
+        }
+      } catch {
+        // Fallback
       }
-    } catch {
-      // Fallback
     }
 
     const lowAttendanceStudents = STUDENTS.filter(s => s.attendanceRate < 75);
@@ -214,11 +226,13 @@ export const api = {
   },
 
   async getClassRoster(department = "CSE", semester = "6th", section = "A") {
-    try {
-      const res = await client.get("/faculty/roster/", { params: { department, semester, section } });
-      if (res.data && res.data.length > 0) return res.data;
-    } catch {
-      // Fallback
+    if (!isStaticHosting) {
+      try {
+        const res = await client.get("/faculty/roster/", { params: { department, semester, section } });
+        if (res.data && res.data.length > 0) return res.data;
+      } catch {
+        // Fallback
+      }
     }
     return STUDENTS;
   },
@@ -293,22 +307,26 @@ export const api = {
     }
 
     // 3. Post to backend if reachable
-    try {
-      const res = await client.post("/faculty/mark-attendance/", markingPayload);
-      if (res.data) return res.data;
-    } catch {
-      // Fallback
+    if (!isStaticHosting) {
+      try {
+        const res = await client.post("/faculty/mark-attendance/", markingPayload);
+        if (res.data) return res.data;
+      } catch {
+        // Fallback
+      }
     }
     return { success: true, message: "Attendance registered and calculated successfully!" };
   },
 
   // Principal Services
   async getPrincipalDashboardData() {
-    try {
-      const res = await client.get("/principal/dashboard/");
-      if (res.data) return res.data;
-    } catch {
-      // Fallback
+    if (!isStaticHosting) {
+      try {
+        const res = await client.get("/principal/dashboard/");
+        if (res.data) return res.data;
+      } catch {
+        // Fallback
+      }
     }
     const deptStats = INSTITUTION_DEPARTMENT_STATS;
     const totalStudents = deptStats.reduce((acc, d) => acc + d.totalStudents, 0);
@@ -339,11 +357,13 @@ export const api = {
 
   // Parent Services
   async getParentDashboardData(parentId) {
-    try {
-      const res = await client.get("/parent/dashboard/", { params: { parentId } });
-      if (res.data) return res.data;
-    } catch {
-      // Fallback
+    if (!isStaticHosting) {
+      try {
+        const res = await client.get("/parent/dashboard/", { params: { parentId } });
+        if (res.data) return res.data;
+      } catch {
+        // Fallback
+      }
     }
     const student = DEMO_USERS.student;
     const subjects = STUDENT_SUBJECT_ATTENDANCE;
@@ -394,11 +414,13 @@ export const api = {
   },
 
   async getNotifications(role = "all", userId = null) {
-    try {
-      const res = await client.get("/notifications/", { params: { role, userId } });
-      if (res.data && res.data.length > 0) return res.data;
-    } catch {
-      // Fallback
+    if (!isStaticHosting) {
+      try {
+        const res = await client.get("/notifications/", { params: { role, userId } });
+        if (res.data && res.data.length > 0) return res.data;
+      } catch {
+        // Fallback
+      }
     }
     const notifs = this.getStoredNotifications();
     if (role === "all") return notifs;
@@ -406,10 +428,12 @@ export const api = {
   },
 
   async markNotificationRead(id) {
-    try {
-      await client.post(`/notifications/${id}/read/`);
-    } catch {
-      // Fallback
+    if (!isStaticHosting) {
+      try {
+        await client.post(`/notifications/${id}/read/`);
+      } catch {
+        // Fallback
+      }
     }
     const notifs = this.getStoredNotifications();
     const target = notifs.find(n => n.id === id);
@@ -422,10 +446,12 @@ export const api = {
   },
 
   async markAllNotificationsRead(role = null) {
-    try {
-      await client.post("/notifications/mark-all-read/");
-    } catch {
-      // Fallback
+    if (!isStaticHosting) {
+      try {
+        await client.post("/notifications/mark-all-read/");
+      } catch {
+        // Fallback
+      }
     }
     const notifs = this.getStoredNotifications();
     notifs.forEach(n => {
@@ -439,11 +465,13 @@ export const api = {
   },
 
   async createNotification(notification) {
-    try {
-      const res = await client.post("/notifications/", notification);
-      if (res.data && res.data.notification) return res.data;
-    } catch {
-      // Fallback
+    if (!isStaticHosting) {
+      try {
+        const res = await client.post("/notifications/", notification);
+        if (res.data && res.data.notification) return res.data;
+      } catch {
+        // Fallback
+      }
     }
     const notifs = this.getStoredNotifications();
     const newNotif = {
@@ -472,11 +500,13 @@ export const api = {
 
   // Reports
   async getAttendanceReports(filters = {}) {
-    try {
-      const res = await client.get("/reports/", { params: filters });
-      if (res.data && res.data.length > 0) return res.data;
-    } catch {
-      // Fallback
+    if (!isStaticHosting) {
+      try {
+        const res = await client.get("/reports/", { params: filters });
+        if (res.data && res.data.length > 0) return res.data;
+      } catch {
+        // Fallback
+      }
     }
     let students = STUDENTS;
     if (filters.search) {
