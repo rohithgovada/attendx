@@ -1,0 +1,80 @@
+﻿export const SUBJECTS = [
+  {
+    id: "SUB-CS601",
+    code: "CS601",
+    name: "Advanced Database Systems",
+    shortName: "DBMS",
+    department: "Computer Science & Engineering",
+    semester: "6th Semester",
+    credits: 4,
+    facultyId: "FAC104",
+    facultyName: "Dr. Sarah Jenkins",
+    totalHours: 48,
+    color: "#2563eb"
+  },
+  {
+    id: "SUB-CS602",
+    code: "CS602",
+    name: "Computer Networks & Security",
+    shortName: "CNS",
+    department: "Computer Science & Engineering",
+    semester: "6th Semester",
+    credits: 4,
+    facultyId: "FAC102",
+    facultyName: "Prof. Alan Miller",
+    totalHours: 45,
+    color: "#7c3aed"
+  },
+  {
+    id: "SUB-CS603",
+    code: "CS603",
+    name: "Machine Learning & AI",
+    shortName: "ML/AI",
+    department: "Computer Science & Engineering",
+    semester: "6th Semester",
+    credits: 3,
+    facultyId: "FAC103",
+    facultyName: "Dr. Priya Sharma",
+    totalHours: 40,
+    color: "#059669"
+  },
+  {
+    id: "SUB-CS604",
+    code: "CS604",
+    name: "Cloud Computing & DevOps",
+    shortName: "Cloud",
+    department: "Computer Science & Engineering",
+    semester: "6th Semester",
+    credits: 3,
+    facultyId: "FAC105",
+    facultyName: "Prof. Marcus Cole",
+    totalHours: 38,
+    color: "#d97706"
+  },
+  {
+    id: "SUB-CS605",
+    code: "CS605",
+    name: "Software Engineering & Agile",
+    shortName: "SE",
+    department: "Computer Science & Engineering",
+    semester: "6th Semester",
+    credits: 3,
+    facultyId: "FAC104",
+    facultyName: "Dr. Sarah Jenkins",
+    totalHours: 36,
+    color: "#db2777"
+  },
+  {
+    id: "SUB-CS606",
+    code: "CS606",
+    name: "Distributed Systems Lab",
+    shortName: "DS Lab",
+    department: "Computer Science & Engineering",
+    semester: "6th Semester",
+    credits: 2,
+    facultyId: "FAC104",
+    facultyName: "Dr. Sarah Jenkins",
+    totalHours: 30,
+    color: "#0891b2"
+  }
+];
