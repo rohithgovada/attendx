@@ -99,23 +99,88 @@ const client = axios.create({
 });
 
 export const api = {
-  // Authentication
-  async login(email, password, role) {
+  // Authentication with specific credentials for Student, Teacher, Principal, and Parent
+  async login(usernameOrEmail, password, role) {
+    const input = (usernameOrEmail || "").trim().toLowerCase();
+    const pwd = (password || "").trim();
+
+    // Map login aliases to corresponding roles
+    let targetRole = role;
+    if (
+      input === "student" ||
+      input === "student@attendx.edu" ||
+      input === "alex.morgan@college.edu" ||
+      input === "cs2024-042" ||
+      input === "21cs042"
+    ) {
+      targetRole = "student";
+    } else if (
+      input === "teacher" ||
+      input === "faculty" ||
+      input === "teacher@attendx.edu" ||
+      input === "faculty@attendx.edu" ||
+      input === "sarah.jenkins@college.edu" ||
+      input === "emp-cs-104"
+    ) {
+      targetRole = "faculty";
+    } else if (
+      input === "principal" ||
+      input === "admin" ||
+      input === "principal@attendx.edu" ||
+      input === "robert.vance@college.edu" ||
+      input === "emp-adm-001"
+    ) {
+      targetRole = "principal";
+    } else if (
+      input === "parent" ||
+      input === "parent@attendx.edu" ||
+      input === "david.morgan@gmail.com"
+    ) {
+      targetRole = "parent";
+    }
+
+    const validPasswordsByRole = {
+      student: ["student123", "password123"],
+      faculty: ["teacher123", "faculty123", "password123"],
+      principal: ["principal123", "admin123", "password123"],
+      parent: ["parent123", "password123"]
+    };
+
+    const allowedPasswords = validPasswordsByRole[targetRole] || ["password123"];
+    const isPasswordCorrect = allowedPasswords.includes(pwd);
+
     if (!isStaticHosting) {
       try {
-        const res = await client.post("/auth/login/", { email, password, role });
+        const res = await client.post("/auth/login/", { email: input, password: pwd, role: targetRole });
         if (res.data && res.data.success) {
           return res.data;
         }
       } catch {
-        // Graceful fallback to demo user if backend connection is unavailable
+        // Local fallback for offline/static deployment
       }
     }
-    const user = DEMO_USERS[role];
-    if (user) {
-      return { success: true, user, token: `local_token_${role}` };
+
+    if (isPasswordCorrect && DEMO_USERS[targetRole]) {
+      return {
+        success: true,
+        user: DEMO_USERS[targetRole],
+        role: targetRole,
+        token: `local_token_${targetRole}_${Date.now()}`
+      };
     }
-    return { success: false, message: "Invalid credentials" };
+
+    if (!isPasswordCorrect) {
+      const hint = targetRole === "faculty" ? "teacher123" : `${targetRole}123`;
+      return {
+        success: false,
+        message: `Incorrect password! The password for ${targetRole === 'faculty' ? 'Teacher' : targetRole} is "${hint}" (or "password123").`
+      };
+    }
+
+    return {
+      success: false,
+      message: "Invalid login. Please use username: student, teacher, or principal."
+    };
   },
 
   // Student Services

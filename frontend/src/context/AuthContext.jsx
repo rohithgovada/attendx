@@ -15,19 +15,11 @@ const safeGetAuth = () => {
     // fallback
   }
 
-  // Default to student demo user on first visit or fallback
-  const defaultUser = DEMO_USERS.student;
-  const initial = {
-    user: defaultUser,
-    role: "student",
-    token: "mock_initial_token"
+  return {
+    user: null,
+    role: null,
+    token: null
   };
-  try {
-    localStorage.setItem("attendx_auth", JSON.stringify(initial));
-  } catch {
-    // fallback
-  }
-  return initial;
 };
 
 const safeSetAuth = (state) => {
