@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { api } from "../../services/api";
 import { Badge } from "../../components/common/Badge";
 import { ProgressBar } from "../../components/common/ProgressBar";
@@ -76,12 +76,16 @@ export const AttendanceReports = () => {
       "Roll Number",
       "Student Name",
       "Department",
+      "Academic Year",
       "Semester",
       "Section",
+      "CGPA",
+      "Marks %",
+      "Academic Standing",
       "Total Classes",
       "Attended Classes",
       "Attendance Percentage",
-      "Status",
+      "Compliance Status",
       "Parent Name",
       "Parent Phone"
     ];
@@ -90,8 +94,12 @@ export const AttendanceReports = () => {
       s.rollNo,
       `"${s.name}"`,
       `"${s.department}"`,
+      s.year || "3rd Year",
       s.semester,
       s.section,
+      s.cgpa || 8.5,
+      `${s.marksPercentage || 85}%`,
+      s.academicStanding || "Passed",
       s.totalClasses,
       s.attendedClasses,
       `${s.attendanceRate}%`,
@@ -129,6 +137,27 @@ export const AttendanceReports = () => {
       )
     },
     { key: "department", label: "Department", sortable: true },
+    {
+      key: "cgpa",
+      label: "Academic Marks & Standing",
+      sortable: true,
+      render: (val, row) => (
+        <div>
+          <div style={{ fontWeight: 700, color: val >= 9.0 ? "#2563eb" : val >= 5.0 ? "#10b981" : "#dc2626" }}>
+            {val || 8.5} CGPA ({row.marksPercentage || 85}%)
+          </div>
+          <div style={{ fontSize: "0.72rem" }}>
+            {row.academicStanding === "Topper" ? (
+              <span style={{ color: "#92400e", fontWeight: 700 }}>🏆 Topper (Rank #{row.classRank || 1})</span>
+            ) : row.academicStanding === "Failed" ? (
+              <span style={{ color: "#dc2626", fontWeight: 700 }}>❌ Failed ({row.backlogs || 2} backlogs)</span>
+            ) : (
+              <span style={{ color: "#166534", fontWeight: 600 }}>Passed</span>
+            )}
+          </div>
+        </div>
+      )
+    },
     {
       key: "attendedClasses",
       label: "Attended / Conducted",
@@ -272,9 +301,11 @@ export const AttendanceReports = () => {
               onChange={(e) => setDepartment(e.target.value)}
             >
               <option value="all">All Departments</option>
-              <option value="Computer Science">Computer Science & Engineering</option>
+              <option value="Computer Science">Computer Science &amp; Engineering</option>
+              <option value="Electronics">Electronics &amp; Communication</option>
+              <option value="Mechanical">Mechanical Engineering</option>
+              <option value="Civil">Civil Engineering</option>
               <option value="Information">Information Technology</option>
-              <option value="Electronics">Electronics & Communication</option>
             </select>
           </div>
 
@@ -285,9 +316,15 @@ export const AttendanceReports = () => {
               value={semester}
               onChange={(e) => setSemester(e.target.value)}
             >
-              <option value="all">All Semesters</option>
-              <option value="6th">6th Semester</option>
-              <option value="4th">4th Semester</option>
+              <option value="all">All Semesters (1st - 8th Sem)</option>
+              <option value="1st">1st Semester (1st Year)</option>
+              <option value="2nd">2nd Semester (1st Year)</option>
+              <option value="3rd">3rd Semester (2nd Year)</option>
+              <option value="4th">4th Semester (2nd Year)</option>
+              <option value="5th">5th Semester (3rd Year)</option>
+              <option value="6th">6th Semester (3rd Year)</option>
+              <option value="7th">7th Semester (4th Year)</option>
+              <option value="8th">8th Semester (4th Year)</option>
             </select>
           </div>
 

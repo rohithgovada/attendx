@@ -1,4 +1,4 @@
-﻿// Mock user accounts for AttendX
+// Mock user accounts for AttendX
 export const DEMO_USERS = {
   student: {
     id: "STU202401",
@@ -9,10 +9,24 @@ export const DEMO_USERS = {
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
     rollNo: "CS2024-042",
     department: "Computer Science & Engineering",
+    year: "3rd Year",
     semester: "6th Semester",
     section: "Section A",
     batch: "2022 - 2026",
+    cgpa: 8.7,
+    marksPercentage: 87.2,
+    academicStanding: "Passed",
+    backlogs: 0,
+    classRank: 4,
     advisor: "Dr. Sarah Jenkins",
+    classIncharge: {
+      name: "Dr. Sarah Jenkins",
+      designation: "Associate Professor & Class In-Charge",
+      email: "sarah.jenkins@college.edu",
+      phone: "+1 (555) 345-6789",
+      cabin: "Block B, Room 302",
+      officeHours: "Mon-Fri: 02:00 PM - 04:00 PM"
+    },
     parentName: "Mr. David Morgan",
     parentEmail: "david.morgan@gmail.com",
     parentPhone: "+1 (555) 876-5432",
@@ -29,6 +43,8 @@ export const DEMO_USERS = {
     department: "Computer Science & Engineering",
     designation: "Associate Professor & Class In-Charge",
     cabin: "Block B, Room 302",
+    inchargeSection: "CSE 3rd Year (6th Sem) - Sec A",
+    inchargeCode: "CSE-6-A",
     assignedSubjects: [
       { code: "CS601", name: "Advanced Database Systems", semester: "6th Sem", section: "A" },
       { code: "CS605", name: "Software Engineering & Agile", semester: "6th Sem", section: "A" },

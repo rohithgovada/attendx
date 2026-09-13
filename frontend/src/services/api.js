@@ -10,6 +10,78 @@ import {
 } from "../mockData/attendance";
 import { NOTIFICATIONS_DATA } from "../mockData/notifications";
 
+const INITIAL_LEAVE_APPLICATIONS = [
+  {
+    id: "LEV-2026-001",
+    studentId: "STU202401",
+    studentName: "Alex Morgan",
+    rollNo: "CS2024-042",
+    department: "Computer Science & Engineering",
+    year: "3rd Year",
+    semester: "6th Semester",
+    section: "A",
+    leaveType: "Short Leave (1 - 2 Days)",
+    category: "Medical / Sick Leave",
+    startDate: "2026-09-14",
+    endDate: "2026-09-14",
+    totalDays: 1,
+    reason: "Severe viral flu and fever. Doctor recommended 24-hour bed rest.",
+    assignedIncharge: "Dr. Sarah Jenkins",
+    assignedInchargeEmail: "sarah.jenkins@college.edu",
+    reviewLevel: "incharge",
+    status: "Pending In-Charge Review",
+    appliedAt: "Today, 08:30 AM",
+    reviewedAt: null,
+    reviewerRemarks: ""
+  },
+  {
+    id: "LEV-2026-002",
+    studentId: "STU202404",
+    studentName: "Caleb Johnson",
+    rollNo: "CS2024-003",
+    department: "Computer Science & Engineering",
+    year: "3rd Year",
+    semester: "6th Semester",
+    section: "A",
+    leaveType: "Long Leave (3+ Days)",
+    category: "Academic Duty Leave / Hackathon",
+    startDate: "2026-09-16",
+    endDate: "2026-09-19",
+    totalDays: 4,
+    reason: "Representing university at National Inter-College Smart India Hackathon Grand Finale in New Delhi.",
+    assignedIncharge: "Dr. Sarah Jenkins",
+    assignedInchargeEmail: "sarah.jenkins@college.edu",
+    reviewLevel: "principal",
+    status: "Pending Principal Sanction",
+    appliedAt: "Yesterday, 04:15 PM",
+    reviewedAt: null,
+    reviewerRemarks: ""
+  },
+  {
+    id: "LEV-2026-003",
+    studentId: "STU202402",
+    studentName: "Aiden Scott",
+    rollNo: "CS2024-001",
+    department: "Computer Science & Engineering",
+    year: "3rd Year",
+    semester: "6th Semester",
+    section: "A",
+    leaveType: "Short Leave (1 - 2 Days)",
+    category: "Personal / Family Event",
+    startDate: "2026-09-10",
+    endDate: "2026-09-11",
+    totalDays: 2,
+    reason: "Attending elder sister's wedding ceremony in Hyderabad.",
+    assignedIncharge: "Dr. Sarah Jenkins",
+    assignedInchargeEmail: "sarah.jenkins@college.edu",
+    reviewLevel: "incharge",
+    status: "Approved",
+    appliedAt: "3 days ago",
+    reviewedAt: "2 days ago",
+    reviewerRemarks: "Approved by Class In-Charge Dr. Sarah Jenkins. Excused duty leave granted."
+  }
+];
+
 const API_BASE_URL = "/api";
 
 const client = axios.create({
@@ -53,6 +125,10 @@ export const api = {
     const overallRate = Number(((totalAttended / totalConducted) * 100).toFixed(1));
     const defaulters = subjects.filter(s => s.percentage < 75);
 
+    const studentUser = DEMO_USERS.student;
+    const allApps = this.getStoredLeaveApplications();
+    const leaveApps = allApps.filter(a => a.studentId === (studentId || studentUser.id));
+
     return {
       overallRate,
       totalConducted,
@@ -61,7 +137,16 @@ export const api = {
       defaulterCount: defaulters.length,
       subjects,
       timetable,
-      status: overallRate >= 75 ? (overallRate >= 85 ? "Excellent" : "Good") : "Warning"
+      status: overallRate >= 75 ? (overallRate >= 85 ? "Excellent" : "Good") : "Warning",
+      academicMarks: {
+        cgpa: studentUser.cgpa || 8.7,
+        marksPercentage: studentUser.marksPercentage || 87.2,
+        academicStanding: studentUser.academicStanding || "Passed",
+        backlogs: studentUser.backlogs || 0,
+        classRank: studentUser.classRank || 4
+      },
+      classIncharge: studentUser.classIncharge,
+      leaveApplications: leaveApps
     };
   },
 
@@ -109,6 +194,11 @@ export const api = {
     const lowAttendanceStudents = STUDENTS.filter(s => s.attendanceRate < 75);
     const completedCount = schedule.filter(s => s.marked).length;
 
+    const allApps = this.getStoredLeaveApplications();
+    const inchargeShortLeaves = allApps.filter(
+      a => a.reviewLevel === "incharge" && a.status === "Pending In-Charge Review"
+    );
+
     return {
       totalClassesConducted: 93 + completedCount,
       avgClassAttendance: 84.6,
@@ -117,7 +207,9 @@ export const api = {
       completedTodayCount: completedCount,
       pendingTodayCount: schedule.length - completedCount,
       todaySchedule: schedule,
-      lowAttendanceStudents: lowAttendanceStudents.slice(0, 5)
+      lowAttendanceStudents: lowAttendanceStudents.slice(0, 5),
+      inchargeSection: "CSE 3rd Year (6th Sem) - Sec A",
+      inchargeShortLeaves
     };
   },
 
@@ -175,6 +267,11 @@ export const api = {
     const totalDefaulters = deptStats.reduce((acc, d) => acc + d.defaulters, 0);
     const overallRate = (deptStats.reduce((acc, d) => acc + d.avgAttendance, 0) / deptStats.length).toFixed(1);
 
+    const allApps = this.getStoredLeaveApplications();
+    const executiveLongLeaves = allApps.filter(
+      a => a.reviewLevel === "principal" && a.status === "Pending Principal Sanction"
+    );
+
     return {
       totalStudents,
       totalFaculty,
@@ -186,7 +283,8 @@ export const api = {
         { title: "Mechanical Engineering Attendance Drop", detail: "Sem 6 Mechanical attendance dipped below 77%", time: "1 hour ago", severity: "high" },
         { title: "Monthly Defaulter List Released", detail: "158 total students flagged for attendance shortage", time: "4 hours ago", severity: "medium" },
         { title: "Biometric & RFID Sync Completed", detail: "Campus RFID gate readers synced 1,420 entries", time: "Today 08:45 AM", severity: "info" }
-      ]
+      ],
+      executiveLongLeaves
     };
   },
 
@@ -283,5 +381,99 @@ export const api = {
       // Fallback
     }
     return { success: true, user: updatedData };
+  },
+
+  // Leave & Absence Permission Management
+  getStoredLeaveApplications() {
+    try {
+      const saved = localStorage.getItem("attendx_leave_applications");
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return JSON.parse(JSON.stringify(INITIAL_LEAVE_APPLICATIONS));
+  },
+
+  saveStoredLeaveApplications(apps) {
+    try {
+      localStorage.setItem("attendx_leave_applications", JSON.stringify(apps));
+    } catch (e) {
+      console.error("Failed to persist leave applications:", e);
+    }
+  },
+
+  async getLeaveApplications(filters = {}) {
+    let apps = this.getStoredLeaveApplications();
+    if (filters.studentId) {
+      apps = apps.filter(a => a.studentId === filters.studentId);
+    }
+    if (filters.reviewLevel) {
+      apps = apps.filter(a => a.reviewLevel === filters.reviewLevel);
+    }
+    if (filters.inchargeEmail) {
+      apps = apps.filter(a => a.assignedInchargeEmail === filters.inchargeEmail);
+    }
+    if (filters.status && filters.status !== "all") {
+      apps = apps.filter(a => a.status === filters.status);
+    }
+    return apps;
+  },
+
+  async applyForLeave(payload) {
+    const apps = this.getStoredLeaveApplications();
+    const newId = `LEV-2026-${String(apps.length + 1).padStart(3, "0")}`;
+    const newApp = {
+      id: newId,
+      ...payload,
+      appliedAt: "Just now",
+      reviewedAt: null,
+      reviewerRemarks: ""
+    };
+    apps.unshift(newApp);
+    this.saveStoredLeaveApplications(apps);
+
+    // Also trigger automated system notification
+    if (payload.reviewLevel === "incharge") {
+      await this.createNotification({
+        title: `📝 Short Leave Request: ${payload.studentName} (${payload.rollNo})`,
+        message: `${payload.studentName} has requested a ${payload.totalDays}-day short leave (${payload.startDate} to ${payload.endDate}) for: ${payload.reason}`,
+        category: "Leave",
+        targetRole: "faculty",
+        priority: "medium"
+      });
+    } else {
+      await this.createNotification({
+        title: `⚖️ Executive Long Leave Sanction Request: ${payload.studentName} (${payload.rollNo})`,
+        message: `${payload.studentName} has submitted a ${payload.totalDays}-day long leave application (${payload.startDate} to ${payload.endDate}) requiring Principal approval. Reason: ${payload.reason}`,
+        category: "Leave",
+        targetRole: "principal",
+        priority: "high"
+      });
+    }
+
+    return { success: true, application: newApp };
+  },
+
+  async reviewLeaveApplication(leaveId, status, remarks = "", reviewerName = "Authority") {
+    const apps = this.getStoredLeaveApplications();
+    const idx = apps.findIndex(a => a.id === leaveId);
+    if (idx !== -1) {
+      apps[idx].status = status;
+      apps[idx].reviewedAt = "Just now";
+      apps[idx].reviewerRemarks = remarks || (status === "Approved" ? `Approved by ${reviewerName}. Absence excused.` : `Rejected by ${reviewerName}.`);
+      this.saveStoredLeaveApplications(apps);
+
+      // Notify student
+      await this.createNotification({
+        title: `Leave Application ${status}: ${apps[idx].id}`,
+        message: `Your ${apps[idx].leaveType} (${apps[idx].startDate} to ${apps[idx].endDate}) has been ${status.toLowerCase()} by ${reviewerName}. Remarks: ${apps[idx].reviewerRemarks}`,
+        category: "Leave",
+        targetRole: "student",
+        priority: status === "Approved" ? "medium" : "high"
+      });
+
+      return { success: true, application: apps[idx] };
+    }
+    return { success: false, message: "Application not found" };
   }
 };

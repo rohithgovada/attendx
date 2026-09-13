@@ -13,7 +13,13 @@ import {
   Calendar,
   AlertCircle,
   Clock,
-  Send
+  Send,
+  UserCheck,
+  Check,
+  X,
+  FileText,
+  Award,
+  ShieldCheck
 } from "lucide-react";
 
 export const FacultyDashboard = () => {
@@ -25,6 +31,20 @@ export const FacultyDashboard = () => {
   const [warningModalOpen, setWarningModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
+
+  const handleReviewLeave = async (leaveId, status) => {
+    await api.reviewLeaveApplication(
+      leaveId,
+      status,
+      status === "Approved"
+        ? `Approved by Class In-Charge ${user?.name || "Dr. Sarah Jenkins"}. Excused absence recorded.`
+        : `Rejected by Class In-Charge ${user?.name || "Dr. Sarah Jenkins"}. Reason insufficient.`,
+      user?.name || "Dr. Sarah Jenkins"
+    );
+    setToastMessage(`Leave request ${status.toLowerCase()} successfully! Student notified.`);
+    const res = await api.getFacultyDashboardData(user?.id);
+    setDashboardData(res);
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -278,6 +298,125 @@ export const FacultyDashboard = () => {
           <div style={{ marginTop: 18, padding: "12px", borderRadius: 8, background: "var(--bg-main)", fontSize: "0.78rem", color: "var(--text-muted)" }}>
             <strong>Department Regulation:</strong> Students with attendance under 75% at month-end will be barred from mid-term internal examinations without medical leave justification.
           </div>
+        </div>
+      </div>
+
+      {/* Class In-Charge Section Portal & Short Leave Approval Desk */}
+      <div className="card" style={{ marginBottom: 24, border: "1px solid #bfdbfe" }}>
+        <div className="card-header" style={{ background: "#f0f7ff", borderBottom: "1px solid #bfdbfe" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: 8, color: "#1e40af" }}>
+                <UserCheck size={20} color="#2563eb" />
+                <span>Class In-Charge Section Desk</span>
+              </h2>
+              <Badge variant="primary">{dashboardData.inchargeSection || "CSE 3rd Year (6th Sem) - Sec A"}</Badge>
+            </div>
+            <p className="card-subtitle" style={{ color: "#1e3a8a" }}>
+              Allocated Section Oversight: 24 Enrolled Students • Class In-Charge: {user?.name || "Dr. Sarah Jenkins"}
+            </p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: "0.82rem", color: "#1e40af", fontWeight: 700, background: "#dbeafe", padding: "4px 10px", borderRadius: "6px" }}>
+              {(dashboardData.inchargeShortLeaves || []).length} Pending Short Leave(s)
+            </span>
+          </div>
+        </div>
+
+        {/* Section Key Metrics */}
+        <div style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, borderBottom: "1px solid var(--border-color)", background: "#fafafa" }}>
+          <div style={{ padding: "10px", background: "#fff", borderRadius: 8, border: "1px solid var(--border-color)", textAlign: "center" }}>
+            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Section Strength</div>
+            <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginTop: 2 }}>24 Students</div>
+          </div>
+          <div style={{ padding: "10px", background: "#fff", borderRadius: 8, border: "1px solid var(--border-color)", textAlign: "center" }}>
+            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Section Avg Attendance</div>
+            <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "#10b981", marginTop: 2 }}>84.6%</div>
+          </div>
+          <div style={{ padding: "10px", background: "#fff", borderRadius: 8, border: "1px solid var(--border-color)", textAlign: "center" }}>
+            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Class Topper</div>
+            <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#2563eb", marginTop: 2 }}>Aiden Scott (9.6)</div>
+          </div>
+          <div style={{ padding: "10px", background: "#fff", borderRadius: 8, border: "1px solid var(--border-color)", textAlign: "center" }}>
+            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Action Required</div>
+            <div style={{ fontSize: "1.25rem", fontWeight: 800, color: (dashboardData.inchargeShortLeaves || []).length > 0 ? "#f59e0b" : "#10b981", marginTop: 2 }}>
+              {(dashboardData.inchargeShortLeaves || []).length} Requests
+            </div>
+          </div>
+        </div>
+
+        {/* Short Leave Applications Table */}
+        <div style={{ padding: "20px" }}>
+          <h3 style={{ fontSize: "0.95rem", fontWeight: 700, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+            <FileText size={16} color="var(--primary)" />
+            <span>Incoming Section Short Leave Applications (1 - 2 Days)</span>
+          </h3>
+
+          {(dashboardData.inchargeShortLeaves || []).length === 0 ? (
+            <div style={{ padding: "24px", textAlign: "center", color: "var(--text-muted)", background: "#f8fafc", borderRadius: 8, border: "1px dashed var(--border-color)" }}>
+              No pending short leave requests for Section A. All student absence permissions are processed!
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Student Name &amp; Roll No</th>
+                    <th>Duration &amp; Dates</th>
+                    <th>Category</th>
+                    <th>Reason / Justification</th>
+                    <th style={{ textAlign: "right" }}>In-Charge Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(dashboardData.inchargeShortLeaves || []).map((app) => (
+                    <tr key={app.id}>
+                      <td>
+                        <strong>{app.studentName}</strong>
+                        <div style={{ fontSize: "0.75rem", fontFamily: "monospace", color: "var(--text-muted)" }}>
+                          {app.rollNo} • {app.department}
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: 600 }}>{app.totalDays} Day(s)</span>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                          {app.startDate} {app.startDate !== app.endDate ? `to ${app.endDate}` : ""}
+                        </div>
+                      </td>
+                      <td>
+                        <Badge variant="warning">{app.category}</Badge>
+                      </td>
+                      <td style={{ maxWidth: "260px", fontSize: "0.82rem" }}>
+                        {app.reason}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <div style={{ display: "inline-flex", gap: 8 }}>
+                          <button
+                            type="button"
+                            onClick={() => handleReviewLeave(app.id, "Approved")}
+                            className="btn btn-primary"
+                            style={{ padding: "6px 12px", fontSize: "0.78rem", gap: 4, background: "#16a34a" }}
+                          >
+                            <Check size={14} />
+                            <span>Approve (Excuse)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReviewLeave(app.id, "Rejected")}
+                            className="btn btn-outline"
+                            style={{ padding: "6px 12px", fontSize: "0.78rem", gap: 4, color: "#dc2626", borderColor: "#fca5a5" }}
+                          >
+                            <X size={14} />
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

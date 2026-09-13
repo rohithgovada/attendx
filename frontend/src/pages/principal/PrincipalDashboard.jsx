@@ -20,7 +20,12 @@ import {
   Search,
   Phone,
   Mail,
-  Filter
+  Filter,
+  Award,
+  ShieldCheck,
+  Check,
+  X,
+  FileText
 } from "lucide-react";
 
 export const PrincipalDashboard = () => {
@@ -33,15 +38,32 @@ export const PrincipalDashboard = () => {
   const [targetAudience, setTargetAudience] = useState("all");
   const [toastMessage, setToastMessage] = useState("");
 
-  // Student Registry Search & Filter state
+  // Student Registry Search & Filter state (Across all 4 years & sections)
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
+  const [selectedYear, setSelectedYear] = useState("all");
+  const [selectedSection, setSelectedSection] = useState("all");
+  const [selectedStanding, setSelectedStanding] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
   // Student Shortage Warning Modal state
   const [warningModalOpen, setWarningModalOpen] = useState(false);
   const [selectedStudentForWarning, setSelectedStudentForWarning] = useState(null);
   const [warningMessage, setWarningMessage] = useState("");
+
+  const handleReviewLongLeave = async (leaveId, status) => {
+    await api.reviewLeaveApplication(
+      leaveId,
+      status,
+      status === "Approved"
+        ? `Official executive sanction granted by Dr. Robert Vance (Principal). Absence condoned.`
+        : `Executive long leave request rejected by Principal.`,
+      "Dr. Robert Vance (Principal)"
+    );
+    setToastMessage(`Long leave request ${status.toLowerCase()} by Principal! Student notified.`);
+    const res = await api.getPrincipalDashboardData();
+    setData(res);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -121,6 +143,19 @@ export const PrincipalDashboard = () => {
       selectedDepartment === "all" ||
       (s.department && s.department.toLowerCase().includes(selectedDepartment.toLowerCase()));
 
+    const matchYear =
+      selectedYear === "all" ||
+      s.year === selectedYear ||
+      (s.semester && s.semester.toLowerCase().includes(selectedYear.toLowerCase()));
+
+    const matchSection =
+      selectedSection === "all" ||
+      s.section === selectedSection;
+
+    const matchStanding =
+      selectedStanding === "all" ||
+      s.academicStanding === selectedStanding;
+
     let matchStatus = true;
     if (selectedStatus === "defaulters") {
       matchStatus = s.attendanceRate < 75;
@@ -130,7 +165,7 @@ export const PrincipalDashboard = () => {
       matchStatus = s.attendanceRate >= 90;
     }
 
-    return matchQuery && matchDept && matchStatus;
+    return matchQuery && matchDept && matchYear && matchSection && matchStanding && matchStatus;
   });
 
   return (
@@ -306,9 +341,9 @@ export const PrincipalDashboard = () => {
           </div>
 
           {/* Search and Filters Bar */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
             {/* Search Input */}
-            <div style={{ flex: "1 1 260px", position: "relative" }}>
+            <div style={{ flex: "1 1 220px", position: "relative" }}>
               <Search
                 size={16}
                 style={{
@@ -331,7 +366,7 @@ export const PrincipalDashboard = () => {
             </div>
 
             {/* Department Filter */}
-            <div style={{ minWidth: "180px" }}>
+            <div style={{ minWidth: "160px" }}>
               <select
                 className="form-select"
                 style={{ fontSize: "0.85rem" }}
@@ -347,8 +382,53 @@ export const PrincipalDashboard = () => {
               </select>
             </div>
 
+            {/* Academic Year Filter (All 4 Years) */}
+            <div style={{ minWidth: "170px" }}>
+              <select
+                className="form-select"
+                style={{ fontSize: "0.85rem" }}
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+              >
+                <option value="all">All Academic Years (1st-4th)</option>
+                <option value="1st Year">1st Year (Sem 1 &amp; 2)</option>
+                <option value="2nd Year">2nd Year (Sem 3 &amp; 4)</option>
+                <option value="3rd Year">3rd Year (Sem 5 &amp; 6)</option>
+                <option value="4th Year">4th Year (Sem 7 &amp; 8)</option>
+              </select>
+            </div>
+
+            {/* Section Filter */}
+            <div style={{ minWidth: "130px" }}>
+              <select
+                className="form-select"
+                style={{ fontSize: "0.85rem" }}
+                value={selectedSection}
+                onChange={(e) => setSelectedSection(e.target.value)}
+              >
+                <option value="all">All Sections</option>
+                <option value="A">Section A</option>
+                <option value="B">Section B</option>
+              </select>
+            </div>
+
+            {/* Academic Marks & Standing Filter */}
+            <div style={{ minWidth: "170px" }}>
+              <select
+                className="form-select"
+                style={{ fontSize: "0.85rem" }}
+                value={selectedStanding}
+                onChange={(e) => setSelectedStanding(e.target.value)}
+              >
+                <option value="all">All Academic Standings</option>
+                <option value="Topper">🏆 Class Toppers (Top 5%)</option>
+                <option value="Passed">🟢 Passed Students</option>
+                <option value="Failed">❌ Failed / Backlogs</option>
+              </select>
+            </div>
+
             {/* Attendance Status Filter */}
-            <div style={{ minWidth: "190px" }}>
+            <div style={{ minWidth: "180px" }}>
               <select
                 className="form-select"
                 style={{ fontSize: "0.85rem" }}
@@ -357,12 +437,12 @@ export const PrincipalDashboard = () => {
               >
                 <option value="all">All Attendance Rates</option>
                 <option value="defaulters">⚠️ Shortage Defaulters (&lt; 75%)</option>
-                <option value="compliant">🟢 Compliant Attendance (75% - 89%)</option>
+                <option value="compliant">🟢 Compliant (75% - 89%)</option>
                 <option value="excellent">⭐ High Honors (&ge; 90%)</option>
               </select>
             </div>
 
-            {(searchQuery || selectedDepartment !== "all" || selectedStatus !== "all") && (
+            {(searchQuery || selectedDepartment !== "all" || selectedYear !== "all" || selectedSection !== "all" || selectedStanding !== "all" || selectedStatus !== "all") && (
               <button
                 type="button"
                 className="btn btn-outline"
@@ -370,6 +450,9 @@ export const PrincipalDashboard = () => {
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedDepartment("all");
+                  setSelectedYear("all");
+                  setSelectedSection("all");
+                  setSelectedStanding("all");
                   setSelectedStatus("all");
                 }}
               >
@@ -386,9 +469,10 @@ export const PrincipalDashboard = () => {
               <tr>
                 <th>Roll Number</th>
                 <th>Student Details</th>
-                <th>Department &amp; Class</th>
+                <th>Academic Year &amp; Class</th>
+                <th>Academic Marks &amp; Standing</th>
                 <th>Classes Attended</th>
-                <th style={{ minWidth: "170px" }}>Attendance Rate</th>
+                <th style={{ minWidth: "160px" }}>Attendance Rate</th>
                 <th>Compliance Status</th>
                 <th>Guardian / Parent</th>
                 <th style={{ textAlign: "right" }}>Executive Action</th>
@@ -397,7 +481,7 @@ export const PrincipalDashboard = () => {
             <tbody>
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "36px", color: "var(--text-muted)" }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "36px", color: "var(--text-muted)" }}>
                     No students match the specified filters or search query.
                   </td>
                 </tr>
@@ -447,10 +531,10 @@ export const PrincipalDashboard = () => {
                         </div>
                       </td>
 
-                      {/* Department & Class */}
+                      {/* Academic Year & Class */}
                       <td>
                         <div style={{ fontWeight: 600, fontSize: "0.82rem", color: "var(--text-main)" }}>
-                          {student.department?.includes("Computer")
+                          {student.year || "3rd Year"} • {student.department?.includes("Computer")
                             ? "CSE"
                             : student.department?.includes("Electronics")
                             ? "ECE"
@@ -462,6 +546,33 @@ export const PrincipalDashboard = () => {
                         </div>
                         <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
                           {student.semester} • Sec {student.section}
+                        </div>
+                      </td>
+
+                      {/* Academic Marks & Standing */}
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                          <strong style={{ fontSize: "0.9rem", color: student.cgpa >= 9.0 ? "#2563eb" : student.cgpa >= 5.0 ? "#10b981" : "#dc2626" }}>
+                            {student.cgpa ? `${student.cgpa} CGPA` : "8.5 CGPA"}
+                          </strong>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                            ({student.marksPercentage || 85}%)
+                          </span>
+                        </div>
+                        <div>
+                          {student.academicStanding === "Topper" ? (
+                            <span style={{ fontSize: "0.72rem", background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "4px", fontWeight: 700, border: "1px solid #fde68a", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                              <Award size={11} /> Class Topper (Rank #{student.classRank || 1})
+                            </span>
+                          ) : student.academicStanding === "Failed" ? (
+                            <span style={{ fontSize: "0.72rem", background: "#fee2e2", color: "#991b1b", padding: "2px 6px", borderRadius: "4px", fontWeight: 700, border: "1px solid #fca5a5" }}>
+                              ❌ Failed ({student.backlogs || 2} Backlogs)
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: "0.72rem", background: "#f0fdf4", color: "#166534", padding: "2px 6px", borderRadius: "4px", fontWeight: 600, border: "1px solid #bbf7d0" }}>
+                              ✓ Passed
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -557,6 +668,112 @@ export const PrincipalDashboard = () => {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Executive Long Leave & Condonation Approval Desk */}
+      <div className="card" style={{ marginBottom: 24, border: "1px solid #ddd6fe" }}>
+        <div className="card-header" style={{ background: "#f5f3ff", borderBottom: "1px solid #ddd6fe" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: 8, color: "#6d28d9" }}>
+                <ShieldCheck size={20} color="#7c3aed" />
+                <span>Executive Long Leave &amp; Condonation Approval Desk</span>
+              </h2>
+              <Badge variant="principal">Principal Sanction Portal</Badge>
+            </div>
+            <p className="card-subtitle" style={{ color: "#5b21b6" }}>
+              Official requests for &ge;3 days absence, extended hospitalization, or national academic duty requiring Principal condonation
+            </p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: "0.82rem", color: "#6d28d9", fontWeight: 700, background: "#ede9fe", padding: "4px 10px", borderRadius: "6px" }}>
+              {(data.executiveLongLeaves || []).length} Pending Long Leave(s)
+            </span>
+          </div>
+        </div>
+
+        <div style={{ padding: "20px" }}>
+          {(data.executiveLongLeaves || []).length === 0 ? (
+            <div style={{ padding: "24px", textAlign: "center", color: "var(--text-muted)", background: "#faf5ff", borderRadius: 8, border: "1px dashed #ddd6fe" }}>
+              No pending long leave or condonation requests requiring executive Principal approval. All institutional leaves are processed!
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Application ID</th>
+                    <th>Student Details</th>
+                    <th>Academic Class</th>
+                    <th>Duration &amp; Dates</th>
+                    <th>Leave Category</th>
+                    <th>Reason / Justification</th>
+                    <th style={{ textAlign: "right" }}>Principal Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.executiveLongLeaves || []).map((app) => (
+                    <tr key={app.id}>
+                      <td>
+                        <span style={{ fontFamily: "monospace", fontWeight: 700, background: "#ede9fe", color: "#6d28d9", padding: "3px 6px", borderRadius: 4 }}>
+                          {app.id}
+                        </span>
+                      </td>
+                      <td>
+                        <strong>{app.studentName}</strong>
+                        <div style={{ fontSize: "0.75rem", fontFamily: "monospace", color: "var(--text-muted)" }}>
+                          {app.rollNo}
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600, fontSize: "0.82rem" }}>
+                          {app.year || "3rd Year"} • {app.department?.includes("Computer") ? "CSE" : app.department}
+                        </div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                          {app.semester} • Sec {app.section}
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: 700, color: "#7c3aed" }}>{app.totalDays} Days</span>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                          {app.startDate} to {app.endDate}
+                        </div>
+                      </td>
+                      <td>
+                        <Badge variant="warning">{app.category}</Badge>
+                      </td>
+                      <td style={{ maxWidth: "260px", fontSize: "0.82rem" }}>
+                        {app.reason}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <div style={{ display: "inline-flex", gap: 8 }}>
+                          <button
+                            type="button"
+                            onClick={() => handleReviewLongLeave(app.id, "Approved")}
+                            className="btn btn-primary"
+                            style={{ padding: "6px 12px", fontSize: "0.78rem", gap: 4, background: "#16a34a" }}
+                          >
+                            <Check size={14} />
+                            <span>Grant Sanction</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReviewLongLeave(app.id, "Rejected")}
+                            className="btn btn-outline"
+                            style={{ padding: "6px 12px", fontSize: "0.78rem", gap: 4, color: "#dc2626", borderColor: "#fca5a5" }}
+                          >
+                            <X size={14} />
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
