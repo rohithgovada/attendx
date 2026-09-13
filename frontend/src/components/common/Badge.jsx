@@ -1,9 +1,10 @@
-﻿import React from "react";
+import React from "react";
 
-export const Badge = ({ children, variant = "primary", className = "" }) => {
-  // Normalize variant names
+export const Badge = ({ children, variant = "primary", className = "", style = {} }) => {
+  // Normalize variant names safely without ever throwing on null/undefined
+  const safeVariant = (variant ? String(variant) : "primary").toLowerCase();
   const getVariantClass = () => {
-    switch (variant.toLowerCase()) {
+    switch (safeVariant) {
       case "present":
       case "good":
       case "excellent":
@@ -28,7 +29,7 @@ export const Badge = ({ children, variant = "primary", className = "" }) => {
   };
 
   return (
-    <span className={`badge ${getVariantClass()} ${className}`}>
+    <span className={`badge ${getVariantClass()} ${className}`} style={style}>
       {children}
     </span>
   );

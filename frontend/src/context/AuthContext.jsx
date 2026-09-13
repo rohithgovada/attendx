@@ -1,32 +1,49 @@
-﻿import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { DEMO_USERS } from "../mockData/users";
 import { api } from "../services/api";
 
 const AuthContext = createContext(null);
 
-const getInitialAuthState = () => {
+const safeGetAuth = () => {
   try {
     const savedAuth = localStorage.getItem("attendx_auth");
     if (savedAuth) {
-      return JSON.parse(savedAuth);
+      const parsed = JSON.parse(savedAuth);
+      if (parsed && parsed.user) return parsed;
     }
   } catch {
     // fallback
   }
 
-  // Default to student demo user on first visit
+  // Default to student demo user on first visit or fallback
   const defaultUser = DEMO_USERS.student;
   const initial = {
     user: defaultUser,
     role: "student",
     token: "mock_initial_token"
   };
-  localStorage.setItem("attendx_auth", JSON.stringify(initial));
+  try {
+    localStorage.setItem("attendx_auth", JSON.stringify(initial));
+  } catch {
+    // fallback
+  }
   return initial;
 };
 
+const safeSetAuth = (state) => {
+  try {
+    if (state && state.user) {
+      localStorage.setItem("attendx_auth", JSON.stringify(state));
+    } else {
+      localStorage.removeItem("attendx_auth");
+    }
+  } catch {
+    // fallback
+  }
+};
+
 export const AuthProvider = ({ children }) => {
-  const [authState, setAuthState] = useState(getInitialAuthState);
+  const [authState, setAuthState] = useState(safeGetAuth);
   const [loading, setLoading] = useState(false);
 
   const { user, role, token } = authState;
@@ -42,7 +59,7 @@ export const AuthProvider = ({ children }) => {
           token: res.token
         };
         setAuthState(nextState);
-        localStorage.setItem("attendx_auth", JSON.stringify(nextState));
+        safeSetAuth(nextState);
         return { success: true, role: res.user.role };
       }
       return { success: false, message: res.message };
@@ -61,21 +78,22 @@ export const AuthProvider = ({ children }) => {
         token: mockToken
       };
       setAuthState(nextState);
-      localStorage.setItem("attendx_auth", JSON.stringify(nextState));
+      safeSetAuth(nextState);
       return selectedUser;
     }
   };
 
   const logout = () => {
-    setAuthState({ user: null, role: null, token: null });
-    localStorage.removeItem("attendx_auth");
+    const nextState = { user: null, role: null, token: null };
+    setAuthState(nextState);
+    safeSetAuth(nextState);
   };
 
   const updateUser = (updatedFields) => {
     const updated = { ...user, ...updatedFields };
     const nextState = { ...authState, user: updated };
     setAuthState(nextState);
-    localStorage.setItem("attendx_auth", JSON.stringify(nextState));
+    safeSetAuth(nextState);
   };
 
   return (

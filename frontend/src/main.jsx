@@ -17,12 +17,13 @@ class ErrorBoundary extends Component {
     console.error("AttendX Application Error:", error, errorInfo);
   }
 
-  handleReset = () => {
+  handleOpen = (path) => {
     try {
       localStorage.clear();
       sessionStorage.clear();
     } catch {}
-    window.location.href = window.location.origin + window.location.pathname;
+    window.location.hash = path;
+    window.location.reload();
   };
 
   render() {
@@ -42,32 +43,88 @@ class ErrorBoundary extends Component {
         }}>
           <div style={{
             background: "#ffffff",
-            padding: "32px",
+            padding: "36px 32px",
             borderRadius: "16px",
             boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
-            maxWidth: "480px",
+            maxWidth: "460px",
+            width: "100%",
             border: "1px solid #e2e8f0"
           }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🎓</div>
-            <h2 style={{ fontSize: "1.3rem", fontWeight: 700, margin: "0 0 8px 0" }}>AttendX Recovery Mode</h2>
-            <p style={{ fontSize: "0.9rem", color: "#64748b", margin: "0 0 20px 0" }}>
-              A cached script or browser session conflict occurred. Click below to refresh cleanly:
+            <div style={{ fontSize: "2.8rem", marginBottom: "12px" }}>🎓</div>
+            <h1 style={{ fontSize: "1.4rem", fontWeight: 800, margin: "0 0 6px 0", letterSpacing: "-0.02em" }}>
+              AttendX Campus Portal
+            </h1>
+            <p style={{ fontSize: "0.88rem", color: "#64748b", margin: "0 0 24px 0" }}>
+              Welcome to AttendX Attendance Management System. Select your portal to enter:
             </p>
-            <button
-              onClick={this.handleReset}
-              style={{
-                background: "#2563eb",
-                color: "#ffffff",
-                border: "none",
-                padding: "10px 24px",
-                borderRadius: "8px",
-                fontWeight: 600,
-                fontSize: "0.9rem",
-                cursor: "pointer"
-              }}
-            >
-              Reset Cache & Launch AttendX
-            </button>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button
+                onClick={() => this.handleOpen("/student/dashboard")}
+                style={{
+                  background: "#2563eb",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "12px 20px",
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  fontSize: "0.95rem",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 12px rgba(37, 99, 235, 0.25)"
+                }}
+              >
+                👉 Enter Student Portal (Alex Morgan)
+              </button>
+
+              <button
+                onClick={() => this.handleOpen("/faculty/dashboard")}
+                style={{
+                  background: "#059669",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "12px 20px",
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  fontSize: "0.95rem",
+                  cursor: "pointer"
+                }}
+              >
+                👉 Enter Faculty Portal (Dr. Sarah Jenkins)
+              </button>
+
+              <button
+                onClick={() => this.handleOpen("/principal/dashboard")}
+                style={{
+                  background: "#7c3aed",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "12px 20px",
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  fontSize: "0.95rem",
+                  cursor: "pointer"
+                }}
+              >
+                👉 Enter Principal Portal (Dr. Robert Vance)
+              </button>
+
+              <button
+                onClick={() => this.handleOpen("/login")}
+                style={{
+                  background: "#f1f5f9",
+                  color: "#475569",
+                  border: "1px solid #cbd5e1",
+                  padding: "10px 20px",
+                  borderRadius: "10px",
+                  fontWeight: 600,
+                  fontSize: "0.88rem",
+                  cursor: "pointer",
+                  marginTop: 6
+                }}
+              >
+                Go to Login Screen
+              </button>
+            </div>
           </div>
         </div>
       );
