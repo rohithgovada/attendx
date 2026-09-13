@@ -10,7 +10,7 @@ import {
 } from "../mockData/attendance";
 import { NOTIFICATIONS_DATA } from "../mockData/notifications";
 
-const API_BASE_URL = "/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 const client = axios.create({
   baseURL: API_BASE_URL,
