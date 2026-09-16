@@ -79,6 +79,33 @@ const INITIAL_LEAVE_APPLICATIONS = [
     appliedAt: "3 days ago",
     reviewedAt: "2 days ago",
     reviewerRemarks: "Approved by Class In-Charge Dr. Sarah Jenkins. Excused duty leave granted."
+  },
+  {
+    id: "LEV-2026-004",
+    studentId: "STU202401",
+    studentName: "Alex Morgan",
+    rollNo: "CS2024-042",
+    department: "Computer Science & Engineering",
+    year: "3rd Year",
+    semester: "6th Semester",
+    section: "A",
+    leaveType: "Parent Absence Letter (1 Day)",
+    category: "Medical / Doctor Visit",
+    startDate: "2026-09-15",
+    endDate: "2026-09-15",
+    totalDays: 1,
+    reason: "Alex had severe viral fever and throat infection. Doctor advised 24-hour bed rest.",
+    assignedIncharge: "Dr. Sarah Jenkins",
+    assignedInchargeEmail: "sarah.jenkins@college.edu",
+    reviewLevel: "incharge",
+    status: "Pending In-Charge Review",
+    appliedAt: "Today, 09:00 AM",
+    reviewedAt: null,
+    reviewerRemarks: "",
+    submittedBy: "parent",
+    parentName: "Mr. David Morgan",
+    parentPhone: "+1 (555) 876-5432",
+    parentRelation: "Father"
   }
 ];
 
@@ -434,6 +461,11 @@ export const api = {
     const subjects = STUDENT_SUBJECT_ATTENDANCE;
     const timetable = STUDENT_TODAY_TIMETABLE;
 
+    const allApps = this.getStoredLeaveApplications();
+    const wardLeaves = allApps.filter(
+      a => a.studentId === student.id || a.rollNo === student.rollNo || a.submittedBy === "parent"
+    );
+
     return {
       ward: student,
       overallRate: student.attendanceRate,
@@ -446,7 +478,8 @@ export const api = {
         email: "sarah.jenkins@college.edu",
         phone: "+1 (555) 345-6789",
         officeHours: "Mon-Fri: 03:00 PM - 04:30 PM"
-      }
+      },
+      leaveApplications: wardLeaves
     };
   },
 
@@ -606,6 +639,9 @@ export const api = {
   saveStoredLeaveApplications(apps) {
     try {
       localStorage.setItem("attendx_leave_applications", JSON.stringify(apps));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("attendx_leave_applications_updated", { detail: apps }));
+      }
     } catch (e) {
       console.error("Failed to persist leave applications:", e);
     }
@@ -642,7 +678,15 @@ export const api = {
     this.saveStoredLeaveApplications(apps);
 
     // Also trigger automated system notification
-    if (payload.reviewLevel === "incharge") {
+    if (payload.submittedBy === "parent") {
+      await this.createNotification({
+        title: `📨 Parent Leave Letter: ${payload.parentName} for ${payload.studentName}`,
+        message: `Guardian ${payload.parentName} (${payload.parentRelation || 'Parent'}) has submitted an official absence permission note for ward ${payload.studentName} (${payload.rollNo}) from ${payload.startDate} to ${payload.endDate}. Reason: ${payload.reason}`,
+        category: "Leave",
+        targetRole: "faculty",
+        priority: "high"
+      });
+    } else if (payload.reviewLevel === "incharge") {
       await this.createNotification({
         title: `📝 Short Leave Request: ${payload.studentName} (${payload.rollNo})`,
         message: `${payload.studentName} has requested a ${payload.totalDays}-day short leave (${payload.startDate} to ${payload.endDate}) for: ${payload.reason}`,
@@ -680,6 +724,17 @@ export const api = {
         targetRole: "student",
         priority: status === "Approved" ? "medium" : "high"
       });
+
+      // If submitted by parent, also notify parent directly
+      if (apps[idx].submittedBy === "parent" || apps[idx].parentName) {
+        await this.createNotification({
+          title: `📬 Parent Leave Letter ${status}: ${apps[idx].studentName}`,
+          message: `Class In-Charge ${reviewerName} has ${status.toLowerCase()} the absence excuse note for your ward ${apps[idx].studentName} (${apps[idx].rollNo}). Remarks: ${apps[idx].reviewerRemarks}`,
+          category: "Leave",
+          targetRole: "parent",
+          priority: status === "Approved" ? "medium" : "high"
+        });
+      }
 
       return { success: true, application: apps[idx] };
     }

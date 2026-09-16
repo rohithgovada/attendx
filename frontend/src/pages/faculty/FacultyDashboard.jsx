@@ -33,6 +33,7 @@ export const FacultyDashboard = () => {
   const [toastMessage, setToastMessage] = useState("");
 
   const handleReviewLeave = async (leaveId, status) => {
+    const isParentLetter = (dashboardData?.inchargeShortLeaves || []).find(a => a.id === leaveId)?.submittedBy === "parent";
     await api.reviewLeaveApplication(
       leaveId,
       status,
@@ -41,7 +42,11 @@ export const FacultyDashboard = () => {
         : `Rejected by Class In-Charge ${user?.name || "Dr. Sarah Jenkins"}. Reason insufficient.`,
       user?.name || "Dr. Sarah Jenkins"
     );
-    setToastMessage(`Leave request ${status.toLowerCase()} successfully! Student notified.`);
+    setToastMessage(
+      isParentLetter
+        ? `Parent leave letter ${status.toLowerCase()}! Absence status updated and guardian notified.`
+        : `Leave request ${status.toLowerCase()} successfully! Student notified.`
+    );
     const res = await api.getFacultyDashboardData(user?.id);
     setDashboardData(res);
   };
@@ -58,6 +63,14 @@ export const FacultyDashboard = () => {
       }
     };
     loadData();
+
+    const handleLeaveUpdate = () => {
+      loadData();
+    };
+    window.addEventListener("attendx_leave_applications_updated", handleLeaveUpdate);
+    return () => {
+      window.removeEventListener("attendx_leave_applications_updated", handleLeaveUpdate);
+    };
   }, [user]);
 
   const handleOpenWarning = (student) => {
@@ -345,74 +358,106 @@ export const FacultyDashboard = () => {
           </div>
         </div>
 
-        {/* Short Leave Applications Table */}
+        {/* Short Leave & Parent Absence Letters Table */}
         <div style={{ padding: "20px" }}>
           <h3 style={{ fontSize: "0.95rem", fontWeight: 700, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
             <FileText size={16} color="var(--primary)" />
-            <span>Incoming Section Short Leave Applications (1 - 2 Days)</span>
+            <span>Incoming Section Short Leaves &amp; Parent Absence Excuse Letters</span>
           </h3>
 
           {(dashboardData.inchargeShortLeaves || []).length === 0 ? (
             <div style={{ padding: "24px", textAlign: "center", color: "var(--text-muted)", background: "#f8fafc", borderRadius: 8, border: "1px dashed var(--border-color)" }}>
-              No pending short leave requests for Section A. All student absence permissions are processed!
+              No pending short leave or parent absence letters for Section A. All student absence permissions are processed!
             </div>
           ) : (
             <div className="table-responsive">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Student Name &amp; Roll No</th>
+                    <th>Student &amp; Submitter</th>
                     <th>Duration &amp; Dates</th>
                     <th>Category</th>
-                    <th>Reason / Justification</th>
+                    <th>Reason / Medical Note</th>
                     <th style={{ textAlign: "right" }}>In-Charge Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(dashboardData.inchargeShortLeaves || []).map((app) => (
-                    <tr key={app.id}>
-                      <td>
-                        <strong>{app.studentName}</strong>
-                        <div style={{ fontSize: "0.75rem", fontFamily: "monospace", color: "var(--text-muted)" }}>
-                          {app.rollNo} • {app.department}
-                        </div>
-                      </td>
-                      <td>
-                        <span style={{ fontWeight: 600 }}>{app.totalDays} Day(s)</span>
-                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                          {app.startDate} {app.startDate !== app.endDate ? `to ${app.endDate}` : ""}
-                        </div>
-                      </td>
-                      <td>
-                        <Badge variant="warning">{app.category}</Badge>
-                      </td>
-                      <td style={{ maxWidth: "260px", fontSize: "0.82rem" }}>
-                        {app.reason}
-                      </td>
-                      <td style={{ textAlign: "right" }}>
-                        <div style={{ display: "inline-flex", gap: 8 }}>
-                          <button
-                            type="button"
-                            onClick={() => handleReviewLeave(app.id, "Approved")}
-                            className="btn btn-primary"
-                            style={{ padding: "6px 12px", fontSize: "0.78rem", gap: 4, background: "#16a34a" }}
-                          >
-                            <Check size={14} />
-                            <span>Approve (Excuse)</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleReviewLeave(app.id, "Rejected")}
-                            className="btn btn-outline"
-                            style={{ padding: "6px 12px", fontSize: "0.78rem", gap: 4, color: "#dc2626", borderColor: "#fca5a5" }}
-                          >
-                            <X size={14} />
-                            <span>Reject</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {(dashboardData.inchargeShortLeaves || []).map((app) => {
+                    const isParent = app.submittedBy === "parent" || !!app.parentName;
+                    return (
+                      <tr key={app.id} style={{ background: isParent ? "#faf5ff" : "inherit" }}>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <strong>{app.studentName}</strong>
+                            {isParent && (
+                              <span style={{
+                                fontSize: "0.7rem",
+                                fontWeight: 700,
+                                background: "#7c3aed",
+                                color: "#ffffff",
+                                padding: "2px 7px",
+                                borderRadius: "4px"
+                              }}>
+                                👨‍👩‍👧 Parent Letter
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: "0.75rem", fontFamily: "monospace", color: "var(--text-muted)" }}>
+                            {app.rollNo} • {app.department}
+                          </div>
+                          {isParent && (
+                            <div style={{ fontSize: "0.74rem", color: "#6b21a8", marginTop: 3 }}>
+                              From: <strong>{app.parentName || "Guardian"}</strong> ({app.parentRelation || "Parent"})
+                              {app.parentPhone && <span> • Ph: {app.parentPhone}</span>}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <span style={{ fontWeight: 600 }}>{app.totalDays} Day(s)</span>
+                          <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                            {app.startDate} {app.startDate !== app.endDate ? `to ${app.endDate}` : ""}
+                          </div>
+                        </td>
+                        <td>
+                          <Badge variant={isParent ? "primary" : "warning"} style={isParent ? { background: "#f3e8ff", color: "#6b21a8", borderColor: "#ddd6fe" } : {}}>
+                            {app.category}
+                          </Badge>
+                        </td>
+                        <td style={{ maxWidth: "260px", fontSize: "0.82rem" }}>
+                          <p style={{ margin: 0 }}>{app.reason}</p>
+                          {isParent && (
+                            <span style={{ fontSize: "0.72rem", color: "#7c3aed", fontStyle: "italic", display: "block", marginTop: 3 }}>
+                              Official Guardian Submission
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <div style={{ display: "inline-flex", gap: 8 }}>
+                            <button
+                              type="button"
+                              onClick={() => handleReviewLeave(app.id, "Approved")}
+                              className="btn btn-primary"
+                              style={{ padding: "6px 12px", fontSize: "0.78rem", gap: 4, background: "#16a34a" }}
+                              title="Approve and mark absence excused"
+                            >
+                              <Check size={14} />
+                              <span>Approve (Excuse)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleReviewLeave(app.id, "Rejected")}
+                              className="btn btn-outline"
+                              style={{ padding: "6px 12px", fontSize: "0.78rem", gap: 4, color: "#dc2626", borderColor: "#fca5a5" }}
+                              title="Reject leave application"
+                            >
+                              <X size={14} />
+                              <span>Reject</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
